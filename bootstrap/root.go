@@ -43,4 +43,7 @@ func init() {
 	rootCmd.PersistentFlags().Bool("overwrite", false, "覆盖已存在的文件 | Overwrite existing files")
 	rootCmd.PersistentFlags().Bool("dry-run", false, "试运行模式 | Dry run mode")
 	rootCmd.PersistentFlags().Bool("skip", false, "跳过已存在的文件 | Skip existing files")
+	rootCmd.PersistentFlags().String("hooks", "ask",
+		"生成后是否执行模板的 hooks.after：ask 先列出再询问（默认）/ always 直接执行（CI 用）/ never 跳过"+
+			" | Run the template's hooks.after: ask (default) / always / never")
 }

@@ -125,7 +125,17 @@ func runNew(cmd *cobra.Command, args []string) {
 	kopylog.Info("⏭  忽略: %d", result.Skipped)
 	kopylog.Info("📂 项目路径: %s", renderedOutputDir)
 
+	// 钩子在统计信息之后跑：先让使用者看到生成结果，再决定要不要执行初始化命令
+	if err := runAfterHooks(cfg, eng, p, renderedOutputDir, getHookMode(cmd), dryRun); err != nil {
+		// 项目文件已经生成好了，钩子失败不该让人以为整次生成失败
+		kopylog.Error("初始化命令失败: %v", err)
+		kopylog.Warn("项目文件已生成于 %s，可进入该目录手动重跑上面的命令", renderedOutputDir)
+		os.Exit(1)
+	}
+
 	kopylog.Info("下一步:")
 	kopylog.Info("  cd %s", renderedOutputDir)
-	kopylog.Info("  # 根据项目类型进行初始化")
+	if len(cfg.Hooks.After) == 0 {
+		kopylog.Info("  # 根据项目类型进行初始化")
+	}
 }

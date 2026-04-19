@@ -118,3 +118,21 @@ func (p *Prompter) askSelect(prompt string, choices []string, defaultVal string)
 	}
 	return choices[idx-1], nil
 }
+
+// Confirm 问一个是/否，默认否
+//
+// 必须复用 Prompter 自己的 reader：bufio 以 4096 字节为单位预读，
+// 若调用方另建一个 bufio.NewReader(os.Stdin)，两个缓冲区会抢同一个 fd，
+// 管道或 CI 下输入会被先建的那个整块吞掉（交互式终端按行返回，往往侥幸看不出来）。
+func (p *Prompter) Confirm(question string) bool {
+	fmt.Printf("%s [y/N]: ", question)
+	line, err := p.reader.ReadString('\n')
+	if err != nil {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(line)) {
+	case "y", "yes":
+		return true
+	}
+	return false
+}

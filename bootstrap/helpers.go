@@ -65,3 +65,14 @@ func exitWithError(format string, args ...interface{}) {
 	kopylog.Error(format, args...)
 	os.Exit(1)
 }
+
+// getHookMode 取钩子执行模式，非法值退回最安全的 ask
+func getHookMode(cmd *cobra.Command) string {
+	mode, _ := cmd.Flags().GetString("hooks")
+	switch mode {
+	case HookModeAsk, HookModeAlways, HookModeNever:
+		return mode
+	default:
+		return HookModeAsk
+	}
+}
