@@ -35,13 +35,23 @@ func New(eng *engine.Engine) *Prompter {
 }
 
 // Collect 收集所有问题的答案，overrides 中的值将跳过交互
+//
+// 每答完一题就把结果写回引擎，这样后面问题的 default 才能引用前面的答案，
+// 例如 ProjectName 的 default 写 "[[ .OrgPrefix ]]-share-proto"。
+// 原先是全部收集完才 SetVars，渲染 default 时引擎里一个变量都没有：
+// 引用别的变量得到 <no value>，带过滤器的（如 | lower）还会在 Execute 阶段
+// 因 nil 入参报错，被 renderDefault 的兜底分支原文返回，于是未渲染的模板串
+// 直接变成答案再写进每个生成文件。
+//
+// 种子取引擎当前已有的变量（调用方可预置 Year 等内置值）。
 func (p *Prompter) Collect(questions []config.Question, overrides map[string]string) (map[string]interface{}, error) {
-	vars := make(map[string]interface{})
+	vars := p.eng.Vars()
 
 	for _, q := range questions {
 		// 命令行覆盖优先
 		if val, ok := overrides[q.Name]; ok {
 			vars[q.Name] = val
+			p.eng.SetVar(q.Name, val)
 			continue
 		}
 
@@ -50,6 +60,7 @@ func (p *Prompter) Collect(questions []config.Question, overrides map[string]str
 			return nil, fmt.Errorf("question %q: %w", q.Name, err)
 		}
 		vars[q.Name] = val
+		p.eng.SetVar(q.Name, val)
 	}
 
 	return vars, nil
@@ -57,7 +68,7 @@ func (p *Prompter) Collect(questions []config.Question, overrides map[string]str
 
 // ask 根据问题类型分发到对应的输入方法
 func (p *Prompter) ask(q config.Question) (string, error) {
-	defaultVal := p.renderDefault(q.Default)
+	defaultVal := p.renderDefault(q.Name, q.Default)
 
 	for {
 		display := q.Prompt

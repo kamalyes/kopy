@@ -38,3 +38,25 @@ func New(cfg *config.TemplateConfig) *Engine {
 func (e *Engine) SetVars(vars map[string]interface{}) {
 	e.vars = vars
 }
+
+// SetVar 写入单个模板变量
+//
+// 交互式收集变量时每答完一题就写入一个，好让后面问题的 default 能引用前面的答案
+// （见 prompt.Collect）
+func (e *Engine) SetVar(name string, value interface{}) {
+	if e.vars == nil {
+		e.vars = make(map[string]interface{})
+	}
+	e.vars[name] = value
+}
+
+// Vars 返回当前模板变量的副本
+//
+// 返回副本而非内部 map：调用方拿去做种子或打印时改动它不应影响引擎状态
+func (e *Engine) Vars() map[string]interface{} {
+	out := make(map[string]interface{}, len(e.vars))
+	for k, v := range e.vars {
+		out[k] = v
+	}
+	return out
+}

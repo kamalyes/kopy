@@ -78,6 +78,9 @@ func runNew(cmd *cobra.Command, args []string) {
 
 	eng := engine.New(cfg)
 
+	// 内置变量先进引擎：问题的 default 可以引用它们（见 prompt.Collect）
+	eng.SetVar("Year", time.Now().Year())
+
 	kopylog.Info("❓ 收集模板变量...")
 	p := prompt.New(eng)
 	vars, err := p.Collect(cfg.Questions, varOverrides)
@@ -85,7 +88,6 @@ func runNew(cmd *cobra.Command, args []string) {
 		exitWithError("收集变量失败: %v", err)
 	}
 
-	vars["Year"] = time.Now().Year()
 	eng.SetVars(vars)
 
 	kopylog.Info("📝 模板变量:")
@@ -122,6 +124,7 @@ func runNew(cmd *cobra.Command, args []string) {
 	kopylog.Info("📁 目录: %d 创建", result.Directories)
 	kopylog.Info("⏭  忽略: %d", result.Skipped)
 	kopylog.Info("📂 项目路径: %s", renderedOutputDir)
+
 	kopylog.Info("下一步:")
 	kopylog.Info("  cd %s", renderedOutputDir)
 	kopylog.Info("  # 根据项目类型进行初始化")
