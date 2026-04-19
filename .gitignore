@@ -1,0 +1,23 @@
+# Binaries
+/bin/
+/dist/
+/kopy
+/kopy.exe
+
+# Test
+*.test
+*.out
+coverage.txt
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+vendor/
