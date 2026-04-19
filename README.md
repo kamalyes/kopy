@@ -1,367 +1,167 @@
-# kopy
+# kopy - 通用项目模板生成工具
 
-> 通用项目模板生成工具 | Universal Project Template Generator
+> `kopy` 是一个用 Go 写的通用项目模板生成工具，跨平台（Windows / macOS / Linux），不限语言：模板里放什么语言的工程，它就能生成什么。交互式收集变量、渲染文件内容与路径、按变量条件性排除文件、生成后自动执行初始化命令。
 
-`kopy` 是一个类似 [Copier](https://github.com/copier-org/copier) 的通用模板生成工具，使用 Go 编写，跨平台支持（Windows / macOS / Linux）它不限于 Go 项目，可以生成任何语言的项目结构
+> [EN] `kopy` is a universal project template generator written in Go. It runs natively on Windows, macOS and Linux and is language-agnostic: whatever stack the template holds is what it generates. It collects variables interactively, renders both file contents and paths, excludes files per variable, and runs the template's initialization commands after generating.
 
-## 特性
+[![stable](https://img.shields.io/badge/stable-stable-green.svg)](https://github.com/kamalyes/kopy)
+[![license](https://img.shields.io/github/license/kamalyes/kopy)]()
+[![release](https://img.shields.io/github/v/release/kamalyes/kopy)]()
+[![commit](https://img.shields.io/github/last-commit/kamalyes/kopy)]()
+[![issues](https://img.shields.io/github/issues/kamalyes/kopy)]()
+[![pull](https://img.shields.io/github/issues-pr/kamalyes/kopy)]()
+[![fork](https://img.shields.io/github/forks/kamalyes/kopy)]()
+[![star](https://img.shields.io/github/stars/kamalyes/kopy)]()
+[![go](https://img.shields.io/github/go-mod/go-version/kamalyes/kopy)]()
+[![size](https://img.shields.io/github/repo-size/kamalyes/kopy)]()
+[![Go Reference](https://pkg.go.dev/badge/github.com/kamalyes/kopy?status.svg)](https://pkg.go.dev/github.com/kamalyes/kopy?tab=doc)
 
-- 🌍 **跨平台** — Windows / macOS / Linux 原生支持
-- 📦 **多源模板** — 支持本地目录和 Git 仓库（含分支指定 `@owner/repo@branch`）
-- 🔄 **交互式收集** — 自动提示用户输入模板变量，支持 string/bool/int/select 四种类型
-- 🎯 **命名转换** — 内置 snake/camel/pascal/kebab 转换（复用 [go-toolbox/stringx](https://github.com/kamalyes/go-toolbox)）
-- ⚡ **自定义定界符** — 默认 `[[ ]]`，避免与 Go template 冲突
-- 🛡️ **冲突检测** — 支持 skip / overwrite / ask 三种策略
-- 🏃 **试运行模式** — `--dry-run` 预览生成结果
-- 📋 **变量覆盖** — `--var Key=Value` 跳过交互
-- 📂 **文件重命名** — 支持基于模板变量的文件/目录重命名规则
-- 🔌 **可扩展** — 分层架构，每层可独立替换
+## 📚 文档导航 | Documentation
 
-## 架构图（Mermaid）
+### 📖 本仓库文档 | In this repository
 
-```mermaid
-flowchart TB
-  %% ========== Inputs ==========
-  H[(Template Source)]:::io --> B[Source Resolve Local / Git]:::core
-  U[User Command kopy new / list]:::entry --> B
+| 文档 \| Document | 内容 \| Contents |
+| --- | --- |
+| [写模板 \| Authoring](./docs/AUTHORING.md) | `kopy.yaml` 每个字段、问题类型、默认值派生、模板语法与内置函数、定界符与 shell 脚本的冲突 |
+| [忽略与重命名 \| Ignore and rename](./docs/RULES.md) | `ignore` / `rename` 规则、跨层级匹配陷阱、按变量条件性排除文件 |
+| [生命周期钩子 \| Hooks](./docs/HOOKS.md) | `hooks.after` 的执行与安全取向、`--hooks` 取值、失败处理 |
+| [架构与执行流程 \| Architecture](./docs/ARCHITECTURE.md) | 六层架构、七步流程、扩展点、冲突策略 |
 
-  %% ========== Orchestration ==========
-  subgraph ORCH[Bootstrap Orchestration]
-    direction TB
-    C[Config Load + Validate kopy.yaml]:::core
-    D[Engine FuncMap + Render]:::core
-    E[Prompt Collect Variables]:::core
-  end
+### 🔗 外部链接 | External
 
-  B --> C --> D
-  D <--> E
+- [🏠 项目主页 \| Home](https://github.com/kamalyes/kopy)
+- [📖 API 文档 \| API reference](https://pkg.go.dev/github.com/kamalyes/kopy)
+- [🐛 问题反馈 \| Issues](https://github.com/kamalyes/kopy/issues)
 
-  %% ========== File Generation ==========
-  subgraph GEN[Template Materialization]
-    direction LR
-    F[Walker Walk + Ignore + Rename]:::core --> G[Writer Conflict Strategy + Write]:::core
-  end
+## 🚀 核心特性 | Features
 
-  D --> F
-  G --> I[(Output Project)]:::io
+- 🌍 **跨平台 | Cross-platform** — Windows / macOS / Linux 原生支持
+- 📦 **多源模板 | Multiple sources** — 本地目录与 Git 仓库，支持 `@owner/repo@branch` 简写
+- 🔄 **交互式收集 | Interactive prompts** — string / bool / int / select 四种类型，`--yes` 可全程零交互
+- 🧬 **默认值可派生 | Derived defaults** — 后面问题的 `default` 能引用前面已答的变量
+- 🎯 **命名转换 | Name conversion** — 内置 snake / camel / pascal / kebab（复用 [go-toolbox/stringx](https://github.com/kamalyes/go-toolbox)）
+- ⚡ **自定义定界符 | Custom delimiters** — 默认 `[[ ]]`，可改成 `<% %>` 等
+- 🚫 **条件性排除 | Conditional exclusion** — `ignore` 模式本身会被渲染，可按变量决定某个文件或目录是否生成
+- 📂 **文件重命名 | Renaming** — 基于模板变量重写文件与目录名
+- 🪝 **生成后初始化 | Post-generate hooks** — `hooks.after` 会被执行，默认先列出命令再询问
+- 🛡️ **冲突策略 | Conflict strategy** — skip / overwrite / ask
+- 🏃 **试运行 | Dry run** — `--dry-run` 只预览不写入
+- 🔌 **分层可替换 | Layered** — source / config / engine / prompt / walker / writer 各层职责单一
 
-  classDef core fill:#e8f2ff,stroke:#1d4ed8,stroke-width:1.2px,color:#0f172a;
-  classDef io fill:#ecfeff,stroke:#0891b2,stroke-width:1.2px,color:#0f172a;
-  classDef entry fill:#f5f3ff,stroke:#7c3aed,stroke-width:1.2px,color:#0f172a;
-```
+## ⚠️ 四个必读行为 | Four behaviours to know first
 
-## 安装
+写模板前先过一遍这四条，它们决定了模板能怎么写；每条都有踩过的实际后果。
+
+[EN] These four decide what a template can express, and each has a concrete failure behind it.
+
+| # | 行为 \| Behaviour | 不知道的后果 \| What goes wrong | 详情 \| Details |
+| --- | --- | --- | --- |
+| 1 | 默认定界符 `[[ ]]` 与 bash 的 `if [[ ]]`、`[[:space:]]` 冲突 | 模板一带 shell 脚本就渲染失败：`bad number syntax: "-t"` | [AUTHORING](./docs/AUTHORING.md) |
+| 2 | `ignore` 判定的是**渲染后**的路径，模式本身也会渲染 | 不知道就只能全量生成后手删；写了 `*.md` 会把生成项目的全部文档删光 | [RULES](./docs/RULES.md) |
+| 3 | 问题的 `default` 可以引用**前面已答**的变量，顺序敏感 | 前向引用渲染出 `<no value>`，会被当成答案写进每个文件 | [AUTHORING](./docs/AUTHORING.md) |
+| 4 | `hooks.after` 会执行，但默认先列出命令再询问（回车即否）| CI 里不加 `--hooks always` 会卡在询问 | [HOOKS](./docs/HOOKS.md) |
+
+## 📦 安装 | Installation
 
 ```bash
-# 指定版本安装到 GOPATH/bin（推荐远程场景）
+# 指定版本安装到 GOPATH/bin（推荐）| pinned install
 go install github.com/kamalyes/kopy@latest
 
-# 从源码构建
-git clone https://github.com/kamalyes/kopy.git
-cd kopy
-make build
+# 从源码构建 | build from source
+git clone https://github.com/kamalyes/kopy.git && cd kopy
+go build -o kopy .
 
-# 安装到 GOPATH/bin
-make install
+# 安装到 GOPATH/bin | install into GOPATH/bin
+go install .
 
-# 交叉编译
-make cross
+# 交叉编译 | cross compile
+GOOS=windows GOARCH=amd64 go build -o kopy.exe .
+GOOS=linux   GOARCH=arm64 go build -o kopy-linux-arm64 .
 ```
 
-构建产物输出到 `bin/` 目录，交叉编译产物输出到 `dist/` 目录
-
-## 快速开始
+## 🚀 快速开始 | Quick start
 
 ```bash
-# 从本地模板生成项目
-kopy new ./my-template
-
-# 从 Git 仓库生成项目（@owner/repo 简写格式）
-kopy new @kamalyes/gateway-template-service
-
-# 指定分支（@owner/repo@branch 格式）
-kopy new @kamalyes/gateway-template-service@master
-
-# 也支持完整 Git URL
-kopy new https://github.com/kamalyes/gateway-template-service
-kopy new https://github.com/kamalyes/gateway-template-service#master
-
-# 指定输出目录
+# 从本地模板生成 | from a local template
 kopy new ./my-template -o ./my-project
 
-# 覆盖变量（跳过交互）
-kopy new ./my-template --var ServiceName=Payment --var ModuleName=payment
+# 从 Git 仓库生成（@owner/repo 简写）| from Git, shorthand
+kopy new @kamalyes/kronos-service-template -o ./my-service
 
-# 强制覆盖已存在的文件
-kopy new ./my-template --overwrite
+# 指定分支 | pick a branch
+kopy new @kamalyes/kronos-service-template@v1.0 -o ./my-service
 
-# 跳过已存在的文件
-kopy new ./my-template --skip
+# 完整 URL 同样支持 | full URL works too
+kopy new https://github.com/kamalyes/kronos-service-template -o ./my-service
 
-# 试运行（预览不写入）
-kopy new ./my-template --dry-run
+# 零交互，全部用默认值 | zero prompts, all defaults
+kopy new ./my-template -o ./my-project -y
 
-# 查看模板信息和问题列表
+# 零交互 + 指定几个变量（--var 优先，派生默认值会跟着级联）
+# [EN] zero prompts plus a few overrides; --var wins and derived defaults cascade
+kopy new ./my-template -o ./my-project -y -v ServiceType=payment
+
+# 生成后自动执行初始化命令，不询问（CI）| run hooks without asking
+kopy new ./my-template -o ./my-project -y --hooks always
+
+# 试运行，只预览不写入 | preview only
+kopy new ./my-template -o ./my-project --dry-run
+
+# 查看模板信息与问题列表 | inspect the template
 kopy list ./my-template
 ```
 
-## 命令参考
+## 📖 命令参考 | Command reference
 
 ### `kopy new <template-source>`
 
-从模板生成新项目
+从模板生成新项目 | Generate a project from a template
 
-| 参数 | 简写 | 默认值 | 说明 |
-|------|------|--------|------|
-| `--output` | `-o` | `.` | 输出目录 |
-| `--var` | `-v` | — | 模板变量覆盖，格式 `key=value`，可多次使用 |
-| `--overwrite` | — | `false` | 覆盖已存在的文件 |
-| `--skip` | — | `false` | 跳过已存在的文件 |
-| `--dry-run` | — | `false` | 试运行模式，仅预览不写入 |
+| 参数 \| Flag | 简写 | 默认值 | 说明 \| Description |
+| --- | --- | --- | --- |
+| `--output` | `-o` | `.` | 输出目录 \| Output directory |
+| `--var` | `-v` | — | 变量覆盖，`key=value`，可多次使用 \| Variable override, repeatable |
+| `--yes` | `-y` | `false` | 不询问，全部使用默认值（`--var` 仍优先）\| Skip all prompts and use defaults |
+| `--hooks` | — | `ask` | `hooks.after` 执行方式：`ask` / `always` / `never` |
+| `--overwrite` | — | `false` | 覆盖已存在的文件 \| Overwrite existing files |
+| `--skip` | — | `false` | 跳过已存在的文件 \| Skip existing files |
+| `--dry-run` | — | `false` | 试运行，仅预览不写入 \| Preview without writing |
 
-模板源格式：
-- 本地目录：`./my-template` 或 `/path/to/template`
-- Git 简写：`@owner/repo`（自动展开为 `https://github.com/owner/repo`）
-- Git 带分支：`@owner/repo@branch`
-- 完整 URL：`https://github.com/owner/repo` 或 `https://github.com/owner/repo#branch`
+`--yes` 下必填项没有默认值时会直接报错并提示用 `--var` 指定，不会静默生成一个缺值的项目；
+`select` 的默认值不在候选里同样报错（模板定义有误）。
+
+[EN] Under `--yes`, a required question without a default errors out and asks for `--var`
+rather than silently producing a project with a missing value; a `select` default outside its
+choices errors too.
+
+模板源格式 | Template source formats：
+
+- 本地目录 | local path：`./my-template`、`/path/to/template`
+- Git 简写 | shorthand：`@owner/repo`（展开为 `https://github.com/owner/repo`）
+- Git 带分支 | with branch：`@owner/repo@branch`
+- 完整 URL | full URL：`https://github.com/owner/repo`、`https://github.com/owner/repo#branch`
 
 ### `kopy list <template-source>`
 
-列出模板信息和交互式问题列表
+列出模板信息与交互式问题列表 | List the template's metadata and questions
 
-## 模板配置 (kopy.yaml)
+## 📋 官方模板 | Official templates
 
-每个模板项目根目录需要包含 `kopy.yaml` 配置文件，定义模板元信息、交互问题、忽略规则和重命名规则
+| 模板 \| Template | 说明 \| Description |
+| --- | --- |
+| [kronos-share-proto-template](https://github.com/kamalyes/kronos-share-proto-template) | gRPC/Protobuf 协议中心：多模块 proto、代码生成链路、网关文档聚合与 CI |
+| [kronos-service-template](https://github.com/kamalyes/kronos-service-template) | Go gRPC 微服务：接协议中心、pbmo 转换、sqlbuilder 仓储、go-bizerror 错误 |
+| [openapi-ts-sdk-template](https://github.com/kamalyes/openapi-ts-sdk-template) | 从远程 OpenAPI 文档生成、可发布到 npm 的 TypeScript SDK |
 
-```yaml
-name: gateway-service
-description: Go gRPC 微服务模板
-version: 1.0.0
-author: kamalyes
-tags: [go, grpc, microservice]
+## 📦 依赖 | Dependencies
 
-# 模板定界符（默认 [[ ]]，避免与 Go template 冲突）
-delimiters:
-  - "[["
-  - "]]"
-
-# 交互式问题
-questions:
-  - name: ServiceName
-    prompt: 服务名称（PascalCase）
-    type: string
-    default: MyService
-    required: true
-
-  - name: ModuleName
-    prompt: 模块名称（小写）
-    type: string
-    default: "[[ .ServiceName | snake ]]"
-    required: true
-
-  - name: AuthorName
-    prompt: 作者名称
-    type: string
-    default: kamalyes
-    required: true
-
-  - name: AuthorEmail
-    prompt: 作者邮箱
-    type: string
-    default: example@qq.com
-    required: true
-
-  - name: GoVersion
-    prompt: Go 版本
-    type: select
-    choices: ["1.22", "1.23", "1.24", "1.25"]
-    default: "1.25"
-
-  - name: UseRedis
-    prompt: 是否使用 Redis
-    type: bool
-    default: "true"
-
-  - name: Port
-    prompt: 服务端口
-    type: int
-    default: "8080"
-
-# 忽略的文件模式
-ignore:
-  - "kopy.yaml"
-  - ".git/**"
-  - "*.md"
-
-# 文件重命名规则
-rename:
-  - pattern: "__service_name__"
-    value: "[[ .ServiceName | snake ]]"
-
-# 生命周期钩子
-hooks:
-  before:
-    - echo "开始生成项目..."
-  after:
-    - go mod tidy
-```
-
-### 问题类型说明
-
-| 类型 | 说明 | 输入方式 |
-|------|------|----------|
-| `string` | 文本输入 | 直接输入，回车确认 |
-| `bool` | 布尔选择 | 输入 y/yes/true 或 n/no/false |
-| `int` | 整数输入 | 输入数字，自动校验 |
-| `select` | 下拉选择 | 输入选项编号 |
-
-### 默认值模板语法
-
-问题的 `default` 字段支持模板语法，可以引用之前已收集的变量：
-
-```yaml
-questions:
-  - name: ServiceName
-    type: string
-    default: MyService
-  - name: ModuleName
-    type: string
-    default: "[[ .ServiceName | snake ]]"  # 引用 ServiceName 并转为蛇形命名
-```
-
-### 内置变量
-
-除了 `kopy.yaml` 中定义的问题变量外，引擎还会自动注入以下内置变量：
-
-| 变量 | 说明 | 示例值 |
-|------|------|--------|
-| `Year` | 当前年份 | `2026` |
-
-## 模板语法
-
-使用 `[[ ]]` 作为定界符（可在 kopy.yaml 中自定义），所有模板文件的内容和文件名都会被渲染：
-
-```go
-// 文件名: [[ .ServiceName | snake ]]_service.go
-package [[ .ModuleName | lower ]]
-
-const ServiceName = "[[ .ServiceName ]]"
-const ServicePort = [[ .Port ]]
-```
-
-文件头示例（动态注入作者信息）：
-
-```go
-/*
- * @Author: [[ .AuthorName ]] [[ .AuthorEmail ]]
- * @Date: [[ now | date "2006-01-02 15:04:05" ]]
- * @LastEditors: [[ .AuthorName ]] [[ .AuthorEmail ]]
- * @LastEditTime: [[ nowFmt "2006-01-02 15:04:05" ]]
- * @FilePath: \[[ .ServiceName | snake ]]\service.go
- * @Description: [[ .ServiceName ]] 服务实现
- *
- * Copyright (c) [[ .Year ]] by [[ .AuthorName ]], All Rights Reserved.
- */
-```
-
-### 内置函数
-
-| 函数 | 说明 | 示例 |
-|------|------|------|
-| `snake` | 蛇形命名 | `MyService` → `my_service` |
-| `camel` | 驼峰命名 | `my_service` → `myService` |
-| `pascal` | 帕斯卡命名 | `my_service` → `MyService` |
-| `kebab` | 短横线命名 | `MyService` → `my-service` |
-| `lower` | 转小写 | `Hello` → `hello` |
-| `upper` | 转大写 | `hello` → `HELLO` |
-| `title` | 首字母大写 | `hello world` → `Hello World` |
-| `trim` | 去除首尾空格 | ` hello ` → `hello` |
-| `prefix` | 添加前缀 | `name` → `prefix_name` |
-| `suffix` | 添加后缀 | `name` → `name_suffix` |
-| `replace` | 替换字符串 | `hello world` → `hello_go` |
-| `now` | 返回当前时间（time.Time） | `[[ now ]]` |
-| `date` | 按格式渲染时间（常见写法：`yyyy-mm-dd HH:MM:SS`） | `[[ now | date "2006-01-02 15:04:05" ]]` |
-| `nowFmt` | 按格式渲染当前时间（常见写法：`yyyy-mm-dd`） | `[[ nowFmt "2006-01-02" ]]` |
-| `default` | 默认值 | `""` → `fallback` |
-
-命名转换函数复用 [go-toolbox/stringx](https://github.com/kamalyes/go-toolbox) 实现
-
-时间格式说明：文档描述用 `yyyy-mm-dd` 风格；模板参数实际使用 Go Layout（`yyyy-mm-dd HH:MM:SS` 对应 `2006-01-02 15:04:05`）。
-
-### 执行流程
-
-1. **源解析** (`source/`) — 根据输入判断本地路径或 Git 仓库，Git 仓库自动克隆到临时目录
-2. **配置加载** (`config/`) — 从模板目录读取 `kopy.yaml`，解析并校验配置
-3. **变量收集** (`prompt/`) — 交互式收集用户输入，`--var` 参数可跳过交互
-4. **模板渲染** (`engine/`) — 使用 Go `text/template` 引擎渲染文件内容和路径
-5. **目录遍历** (`walker/`) — 递归遍历模板目录，应用忽略规则和重命名规则
-6. **文件写入** (`writer/`) — 渲染后的内容写入目标目录，支持冲突检测和试运行
-
-### 扩展点
-
-每一层职责单一，可独立替换：
-- **source/** — 扩展新的模板源（如 S3、OCI Registry）
-- **engine/** — 扩展新的模板函数或定界符
-- **prompt/** — 替换为 TUI 界面
-- **writer/** — 扩展新的冲突策略
-
-## 忽略规则
-
-`kopy.yaml` 中的 `ignore` 字段支持多种匹配模式：
-
-| 模式 | 说明 | 示例 |
-|------|------|------|
-| 精确匹配 | 完全匹配路径 | `kopy.yaml` |
-| 前缀匹配 | 匹配目录前缀 | `.git/` |
-| 后缀匹配 | 匹配文件扩展名 | `*.md` |
-| 通配符匹配 | glob 模式 | `docs/**/*.md` |
-| 路径段匹配 | 匹配路径中任意段 | `__pycache__` |
-
-默认忽略规则：`kopy.yaml` 和 `.git/**`
-
-## 文件重命名
-
-`rename` 字段定义文件/目录名的替换规则，支持模板语法：
-
-```yaml
-rename:
-  - pattern: "__service_name__"
-    value: "[[ .ServiceName | snake ]]"
-  - pattern: "__module_name__"
-    value: "[[ .ModuleName | lower ]]"
-```
-
-模板目录中的 `__service_name__` 目录或文件名会被替换为渲染后的值
-
-## 冲突处理策略
-
-当目标路径已存在文件时，支持三种处理策略：
-
-| 策略 | 参数 | 说明 |
-|------|------|------|
-| `ask` | 默认 | 交互式询问是否覆盖 |
-| `overwrite` | `--overwrite` | 强制覆盖所有已存在文件 |
-| `skip` | `--skip` | 跳过所有已存在文件 |
-
-## 可执行文件检测
-
-写入器会自动检测文件内容是否以 shebang（`#!`）开头，如果是则设置可执行权限（0755），否则使用普通文件权限（0644）
-
-## 官方模板
-
-| 模板 | 说明 |
-|------|------|
-| [gateway-template-proto](https://github.com/kamalyes/gateway-template-proto) | Protobuf 协议中心模板 |
-| [gateway-template-service](https://github.com/kamalyes/gateway-template-service) | Go gRPC 微服务模板 |
-
-## 依赖
-
-| 依赖 | 说明 |
-|------|------|
-| [go-toolbox](https://github.com/kamalyes/go-toolbox) | 命名转换（stringx）、数学工具（mathx）等 |
+| 依赖 \| Dependency | 说明 \| Description |
+| --- | --- |
+| [go-toolbox](https://github.com/kamalyes/go-toolbox) | 命名转换（stringx）、数学工具（mathx） |
+| [go-logger](https://github.com/kamalyes/go-logger) | 日志输出 |
 | [cobra](https://github.com/spf13/cobra) | CLI 框架 |
 | [yaml.v3](https://gopkg.in/yaml.v3) | YAML 解析 |
 
 ## License
 
-Copyright (c) 2026 by kamalyes, All Rights Reserved.
+MIT
