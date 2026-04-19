@@ -72,3 +72,11 @@ func New(outputDir string, eng *engine.Engine, opts ...Option) *Writer {
 func (w *Writer) Stats() (created, skipped, overwritten int) {
 	return w.created, w.skipped, w.overwritten
 }
+
+// Engine 返回写入器使用的模板引擎
+//
+// 给 walker 用：忽略规则必须对「渲染后」的路径判定，而渲染原本只发生在写入阶段
+// （见 walker.WalkTemplate）
+func (w *Writer) Engine() *engine.Engine {
+	return w.engine
+}
