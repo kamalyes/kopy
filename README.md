@@ -17,9 +17,45 @@
 - 📂 **文件重命名** — 支持基于模板变量的文件/目录重命名规则
 - 🔌 **可扩展** — 分层架构，每层可独立替换
 
+## 架构图（Mermaid）
+
+```mermaid
+flowchart TB
+  %% ========== Inputs ==========
+  H[(Template Source)]:::io --> B[Source Resolve Local / Git]:::core
+  U[User Command kopy new / list]:::entry --> B
+
+  %% ========== Orchestration ==========
+  subgraph ORCH[Bootstrap Orchestration]
+    direction TB
+    C[Config Load + Validate kopy.yaml]:::core
+    D[Engine FuncMap + Render]:::core
+    E[Prompt Collect Variables]:::core
+  end
+
+  B --> C --> D
+  D <--> E
+
+  %% ========== File Generation ==========
+  subgraph GEN[Template Materialization]
+    direction LR
+    F[Walker Walk + Ignore + Rename]:::core --> G[Writer Conflict Strategy + Write]:::core
+  end
+
+  D --> F
+  G --> I[(Output Project)]:::io
+
+  classDef core fill:#e8f2ff,stroke:#1d4ed8,stroke-width:1.2px,color:#0f172a;
+  classDef io fill:#ecfeff,stroke:#0891b2,stroke-width:1.2px,color:#0f172a;
+  classDef entry fill:#f5f3ff,stroke:#7c3aed,stroke-width:1.2px,color:#0f172a;
+```
+
 ## 安装
 
 ```bash
+# 指定版本安装到 GOPATH/bin（推荐远程场景）
+go install github.com/kamalyes/kopy@latest
+
 # 从源码构建
 git clone https://github.com/kamalyes/kopy.git
 cd kopy
@@ -44,11 +80,11 @@ kopy new ./my-template
 kopy new @kamalyes/gateway-template-service
 
 # 指定分支（@owner/repo@branch 格式）
-kopy new @kamalyes/gateway-template-service@v1.0
+kopy new @kamalyes/gateway-template-service@master
 
 # 也支持完整 Git URL
 kopy new https://github.com/kamalyes/gateway-template-service
-kopy new https://github.com/kamalyes/gateway-template-service#v1.0
+kopy new https://github.com/kamalyes/gateway-template-service#master
 
 # 指定输出目录
 kopy new ./my-template -o ./my-project
@@ -218,9 +254,9 @@ const ServicePort = [[ .Port ]]
 ```go
 /*
  * @Author: [[ .AuthorName ]] [[ .AuthorEmail ]]
- * @Date: [[ .Year ]]-04-19 00:00:00
+ * @Date: [[ now | date "2006-01-02 15:04:05" ]]
  * @LastEditors: [[ .AuthorName ]] [[ .AuthorEmail ]]
- * @LastEditTime: [[ .Year ]]-04-19 00:00:00
+ * @LastEditTime: [[ nowFmt "2006-01-02 15:04:05" ]]
  * @FilePath: \[[ .ServiceName | snake ]]\service.go
  * @Description: [[ .ServiceName ]] 服务实现
  *
@@ -243,63 +279,14 @@ const ServicePort = [[ .Port ]]
 | `prefix` | 添加前缀 | `name` → `prefix_name` |
 | `suffix` | 添加后缀 | `name` → `name_suffix` |
 | `replace` | 替换字符串 | `hello world` → `hello_go` |
+| `now` | 返回当前时间（time.Time） | `[[ now ]]` |
+| `date` | 按格式渲染时间（常见写法：`yyyy-mm-dd HH:MM:SS`） | `[[ now | date "2006-01-02 15:04:05" ]]` |
+| `nowFmt` | 按格式渲染当前时间（常见写法：`yyyy-mm-dd`） | `[[ nowFmt "2006-01-02" ]]` |
 | `default` | 默认值 | `""` → `fallback` |
 
 命名转换函数复用 [go-toolbox/stringx](https://github.com/kamalyes/go-toolbox) 实现
 
-## 项目结构
-
-```
-kopy/
-├── bootstrap/          # CLI 命令层
-│   ├── root.go         # 根命令定义 + 全局参数
-│   ├── new.go          # new 子命令 - 从模板生成新项目
-│   ├── list.go         # list 子命令 - 列出模板信息
-│   └── helpers.go      # 命令辅助函数 - 参数解析、冲突策略
-├── config/             # 配置解析层
-│   ├── types.go        # 配置类型定义 - 常量、枚举、结构体
-│   ├── loader.go       # 配置加载 - 从目录读取并解析 kopy.yaml
-│   ├── validate.go     # 配置校验 - 校验模板配置合法性
-│   └── helper.go       # 配置辅助函数
-├── engine/             # 渲染引擎层
-│   ├── engine.go       # 引擎结构体定义与构造
-│   ├── render.go       # 渲染方法 - 字符串、内容、路径渲染
-│   └── funcs.go        # 内置模板函数 - 命名转换、字符串操作
-├── prompt/             # 交互层
-│   ├── prompt.go       # 提示器结构体与变量收集
-│   ├── input.go        # 各类型输入方法 - string/bool/int/select
-│   └── helper.go       # 辅助方法 - 默认值渲染
-├── source/             # 模板源层
-│   ├── source.go       # Source 接口与工厂 - 自动判断本地/Git源
-│   ├── local.go        # 本地目录模板源实现
-│   └── git.go          # Git 仓库模板源 - 克隆并查找模板目录
-├── walker/             # 遍历层
-│   ├── walker.go       # 模板目录递归遍历
-│   ├── rename.go       # 文件重命名规则
-│   └── ignore.go       # 忽略规则匹配
-├── writer/             # 输出层
-│   ├── writer.go       # 写入器结构体、Option 模式、冲突策略
-│   ├── write.go        # 文件写入方法 - 渲染并写入，支持冲突检测
-│   └── helper.go       # 辅助函数 - 冲突询问、可执行文件检测
-├── main.go             # 入口
-├── Makefile            # 构建脚本
-└── go.mod
-```
-
-## 架构设计
-
-```
-┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
-│ bootstrap/     │────▶│  source/ │────▶│ config/  │────▶│ prompt/  │
-│  CLI层   │     │  源解析   │     │  配置解析  │     │  变量收集  │
-└──────────┘     └──────────┘     └──────────┘     └──────────┘
-                                                          │
-                                                          ▼
-┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
-│ writer/  │◀────│ walker/  │◀────│ engine/  │◀────│  vars    │
-│  文件输出  │     │  目录遍历  │     │  模板渲染  │     │  变量集   │
-└──────────┘     └──────────┘     └──────────┘     └──────────┘
-```
+时间格式说明：文档描述用 `yyyy-mm-dd` 风格；模板参数实际使用 Go Layout（`yyyy-mm-dd HH:MM:SS` 对应 `2006-01-02 15:04:05`）。
 
 ### 执行流程
 
