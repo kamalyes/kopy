@@ -81,8 +81,13 @@ func runNew(cmd *cobra.Command, args []string) {
 	// 内置变量先进引擎：问题的 default 可以引用它们（见 prompt.Collect）
 	eng.SetVar("Year", time.Now().Year())
 
-	kopylog.Info("❓ 收集模板变量...")
-	p := prompt.New(eng)
+	useDefaults := getUseDefaults(cmd)
+	if useDefaults {
+		kopylog.Info("❓ 按 --yes 全部使用默认值，不询问")
+	} else {
+		kopylog.Info("❓ 收集模板变量...")
+	}
+	p := prompt.New(eng, prompt.WithDefaults(useDefaults))
 	vars, err := p.Collect(cfg.Questions, varOverrides)
 	if err != nil {
 		exitWithError("收集变量失败: %v", err)

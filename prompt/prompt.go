@@ -24,14 +24,36 @@ import (
 type Prompter struct {
 	reader *bufio.Reader
 	eng    *engine.Engine
+	// useDefaults 为真时不询问，直接取每个问题的默认值（--yes）
+	useDefaults bool
+}
+
+// Option 提示器配置选项
+type Option func(*Prompter)
+
+// WithDefaults 不询问，直接使用每个问题的默认值
+//
+// 给非交互场景用：CI、脚本、以及「先按默认值跑通一遍再改」的试水。
+// 必填项没有默认值时会直接报错而不是静默生成一个缺值的项目——
+// 那种项目往往要到编译或启动时才暴露问题，排查成本比当场报错高得多。
+//
+// [EN] For non-interactive use: CI, scripts, and "generate with the defaults first, adjust
+// later". A required question without a default errors out rather than silently producing a
+// project with a missing value, which would only surface at build or start time.
+func WithDefaults(on bool) Option {
+	return func(p *Prompter) { p.useDefaults = on }
 }
 
 // New 创建交互式提示器
-func New(eng *engine.Engine) *Prompter {
-	return &Prompter{
+func New(eng *engine.Engine, opts ...Option) *Prompter {
+	p := &Prompter{
 		reader: bufio.NewReader(os.Stdin),
 		eng:    eng,
 	}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
 }
 
 // Collect 收集所有问题的答案，overrides 中的值将跳过交互
@@ -70,6 +92,18 @@ func (p *Prompter) Collect(questions []config.Question, overrides map[string]str
 func (p *Prompter) ask(q config.Question) (string, error) {
 	defaultVal := p.renderDefault(q.Name, q.Default)
 
+	// --yes：不询问，直接用默认值
+	if p.useDefaults {
+		if q.Required && defaultVal == "" {
+			return "", fmt.Errorf("必填项没有默认值，--yes 模式下无法取值，请用 --var %s=<值> 指定", q.Name)
+		}
+		// select 的默认值必须在候选里，否则生成出来是个非法取值
+		if q.Type == config.QuestionTypeSelect && defaultVal != "" && !containsChoice(q.Choices, defaultVal) {
+			return "", fmt.Errorf("默认值 %q 不在候选列表 %v 中（模板定义有误）", defaultVal, q.Choices)
+		}
+		return defaultVal, nil
+	}
+
 	for {
 		display := q.Prompt
 		if display == "" {
@@ -102,4 +136,14 @@ func (p *Prompter) ask(q config.Question) (string, error) {
 
 		return val, nil
 	}
+}
+
+// containsChoice 判断值是否在候选列表里
+func containsChoice(choices []string, value string) bool {
+	for _, c := range choices {
+		if c == value {
+			return true
+		}
+	}
+	return false
 }

@@ -76,3 +76,9 @@ func getHookMode(cmd *cobra.Command) string {
 		return HookModeAsk
 	}
 }
+
+// getUseDefaults 是否跳过询问直接用默认值
+func getUseDefaults(cmd *cobra.Command) bool {
+	v, _ := cmd.Flags().GetBool("yes")
+	return v
+}
