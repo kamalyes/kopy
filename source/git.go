@@ -43,7 +43,7 @@ func (s *gitSource) Resolve() (string, error) {
 
 	cmd := exec.Command("git", args...)
 	if output, err := cmd.CombinedOutput(); err != nil {
-		os.RemoveAll(tmpDir)
+		_ = os.RemoveAll(tmpDir)
 		kopylog.Error("git clone %s failed: %s", url, string(output))
 		return "", kopyerrors.NewSourceGitCloneFailedError(url)
 	}
@@ -53,7 +53,7 @@ func (s *gitSource) Resolve() (string, error) {
 
 func (s *gitSource) Cleanup() {
 	if s.tmpDir != "" {
-		os.RemoveAll(s.tmpDir)
+		_ = os.RemoveAll(s.tmpDir)
 	}
 }
 

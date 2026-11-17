@@ -71,6 +71,12 @@ hooks:
     - bash scripts/init.sh
 ```
 
+> `kopy.yaml` 由内置的 YAML 子集解析器读取：支持块级映射/序列、flow 序列/映射、引号、注释、`|` / `>` 块标量；不支持锚点、别名、多文档和多行 flow 集合。写模板时按上面的示例使用即可，无需引入额外 YAML 库。
+>
+> [EN] `kopy.yaml` is read by a built-in YAML subset parser. Block mappings/sequences,
+> flow sequences/mappings, quotes, comments and `|` / `>` block scalars are supported;
+> anchors, aliases, multiple documents and multi-line flow collections are not.
+
 ### 问题类型 | Question types
 
 | 类型 \| Type | 说明 \| Description | 输入方式 \| Input |
@@ -159,7 +165,7 @@ const ServicePort = <% .Port %>
 | `nowFmt` | 按格式渲染当前时间 | `<% nowFmt "2006-01-02" %>` |
 | `default` | 默认值 | `""` → `fallback` |
 
-命名转换复用 [go-toolbox/stringx](https://github.com/kamalyes/go-toolbox)。
+命名转换为内置实现（纯标准库），无外部依赖。
 时间格式用 Go Layout：`2006-01-02 15:04:05` 对应 `yyyy-mm-dd HH:MM:SS`。
 
 ## ⚠️ 定界符会和 shell 脚本打架 | Delimiters collide with shell scripts

@@ -11,9 +11,10 @@
 
 package config
 
-import "github.com/kamalyes/go-toolbox/pkg/mathx"
-
 // GetDefaultOrDefault 安全获取字符串默认值
 func GetDefaultOrDefault(val, def string) string {
-	return mathx.IfEmpty(val, def)
+	if val == "" {
+		return def
+	}
+	return val
 }

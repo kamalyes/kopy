@@ -20,7 +20,7 @@ import (
 func askOverwrite(path string) bool {
 	fmt.Printf("  ⚠  %s already exists. Overwrite? [y/N]: ", path)
 	var answer string
-	fmt.Scanln(&answer)
+	_, _ = fmt.Scanln(&answer)
 	answer = strings.TrimSpace(strings.ToLower(answer))
 	return answer == "y" || answer == "yes"
 }

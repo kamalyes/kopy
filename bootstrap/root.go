@@ -11,12 +11,8 @@
 
 package bootstrap
 
-import (
-	"github.com/spf13/cobra"
-)
-
 // rootCmd 根命令
-var rootCmd = &cobra.Command{
+var rootCmd = &Command{
 	Use:   "kopy",
 	Short: "通用项目模板生成工具 | Universal project template generator",
 	Long: `kopy - 通用项目模板生成工具

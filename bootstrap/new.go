@@ -23,10 +23,9 @@ import (
 	"github.com/kamalyes/kopy/source"
 	"github.com/kamalyes/kopy/walker"
 	"github.com/kamalyes/kopy/writer"
-	"github.com/spf13/cobra"
 )
 
-var newCmd = &cobra.Command{
+var newCmd = &Command{
 	Use:   "new <template-source>",
 	Short: "从模板生成新项目 | Generate a new project from template",
 	Long: `从本地目录或 Git 仓库加载模板，交互式收集变量，生成新项目。
@@ -35,7 +34,7 @@ var newCmd = &cobra.Command{
   - 本地目录路径: ./my-template, /path/to/template
   - Git 仓库地址: https://github.com/user/template
   - Git 仓库+分支: https://github.com/user/template#v1.0`,
-	Args: cobra.ExactArgs(1),
+	Args: ExactArgs(1),
 	Run:  runNew,
 }
 
@@ -43,7 +42,7 @@ func init() {
 	rootCmd.AddCommand(newCmd)
 }
 
-func runNew(cmd *cobra.Command, args []string) {
+func runNew(cmd *Command, args []string) {
 	templateSource := args[0]
 	outputDir := getOutputDir(cmd)
 	varOverrides := getVarOverrides(cmd)

@@ -15,23 +15,21 @@ import (
 	"strings"
 	"text/template"
 	"time"
-
-	"github.com/kamalyes/go-toolbox/pkg/stringx"
 )
 
-// buildFuncMap 构建模板函数映射，复用 go-toolbox/stringx 的命名转换
+// buildFuncMap 构建模板函数映射
 func (e *Engine) buildFuncMap() template.FuncMap {
 	return template.FuncMap{
-		// 命名转换（复用 go-toolbox/stringx）
-		"snake":  stringx.ToSnakeCase,
-		"camel":  stringx.ToCamelCase,
-		"pascal": stringx.ToPascalCase,
-		"kebab":  stringx.ToKebabCase,
+		// 命名转换
+		"snake":  toSnakeCase,
+		"camel":  toCamelCase,
+		"pascal": toPascalCase,
+		"kebab":  toKebabCase,
 
 		// 字符串操作
 		"lower":   strings.ToLower,
 		"upper":   strings.ToUpper,
-		"title":   strings.Title,
+		"title":   titleCase,
 		"trim":    strings.TrimSpace,
 		"prefix":  func(s, p string) string { return p + s },
 		"suffix":  func(s, sfx string) string { return s + sfx },

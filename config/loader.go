@@ -12,11 +12,11 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
 	kopyerrors "github.com/kamalyes/kopy/errors"
-	"gopkg.in/yaml.v3"
 )
 
 func LoadFromDir(dir string) (*TemplateConfig, error) {
@@ -26,9 +26,14 @@ func LoadFromDir(dir string) (*TemplateConfig, error) {
 		return nil, kopyerrors.NewConfigReadFailedError(configPath)
 	}
 
-	cfg := &TemplateConfig{}
-	if err := yaml.Unmarshal(data, cfg); err != nil {
-		return nil, kopyerrors.NewConfigParseFailedError(configPath)
+	root, err := parseYAML(data)
+	if err != nil {
+		return nil, kopyerrors.NewConfigParseFailedError(fmt.Sprintf("%s: %v", configPath, err))
+	}
+
+	cfg, err := decodeTemplateConfig(root)
+	if err != nil {
+		return nil, kopyerrors.NewConfigParseFailedError(fmt.Sprintf("%s: %v", configPath, err))
 	}
 
 	if cfg.Name == "" {

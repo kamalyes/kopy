@@ -15,15 +15,14 @@ import (
 	"os"
 
 	kopylog "github.com/kamalyes/kopy/log"
-	"github.com/spf13/cobra"
 )
 
-func getOutputDir(cmd *cobra.Command) string {
+func getOutputDir(cmd *Command) string {
 	dir, _ := cmd.Flags().GetString("output")
 	return dir
 }
 
-func getVarOverrides(cmd *cobra.Command) map[string]string {
+func getVarOverrides(cmd *Command) map[string]string {
 	rawVars, _ := cmd.Flags().GetStringSlice("var")
 	overrides := make(map[string]string)
 	for _, v := range rawVars {
@@ -35,7 +34,7 @@ func getVarOverrides(cmd *cobra.Command) map[string]string {
 	return overrides
 }
 
-func getConflictStrategy(cmd *cobra.Command) string {
+func getConflictStrategy(cmd *Command) string {
 	overwrite, _ := cmd.Flags().GetBool("overwrite")
 	skip, _ := cmd.Flags().GetBool("skip")
 	if overwrite {
@@ -47,7 +46,7 @@ func getConflictStrategy(cmd *cobra.Command) string {
 	return "ask"
 }
 
-func getDryRun(cmd *cobra.Command) bool {
+func getDryRun(cmd *Command) bool {
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 	return dryRun
 }
@@ -67,7 +66,7 @@ func exitWithError(format string, args ...interface{}) {
 }
 
 // getHookMode 取钩子执行模式，非法值退回最安全的 ask
-func getHookMode(cmd *cobra.Command) string {
+func getHookMode(cmd *Command) string {
 	mode, _ := cmd.Flags().GetString("hooks")
 	switch mode {
 	case HookModeAsk, HookModeAlways, HookModeNever:
@@ -78,7 +77,7 @@ func getHookMode(cmd *cobra.Command) string {
 }
 
 // getUseDefaults 是否跳过询问直接用默认值
-func getUseDefaults(cmd *cobra.Command) bool {
+func getUseDefaults(cmd *Command) bool {
 	v, _ := cmd.Flags().GetBool("yes")
 	return v
 }

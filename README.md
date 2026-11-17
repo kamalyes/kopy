@@ -39,7 +39,8 @@
 - 📦 **多源模板 | Multiple sources** — 本地目录与 Git 仓库，支持 `@owner/repo@branch` 简写
 - 🔄 **交互式收集 | Interactive prompts** — string / bool / int / select 四种类型，`--yes` 可全程零交互
 - 🧬 **默认值可派生 | Derived defaults** — 后面问题的 `default` 能引用前面已答的变量
-- 🎯 **命名转换 | Name conversion** — 内置 snake / camel / pascal / kebab（复用 [go-toolbox/stringx](https://github.com/kamalyes/go-toolbox)）
+- 🎯 **命名转换 | Name conversion** — 内置 snake / camel / pascal / kebab（纯标准库实现）
+- 🧱 **零第三方依赖 | Zero dependencies** — 仅使用 Go 标准库，CLI / YAML / 日志 / 错误全部内置
 - ⚡ **自定义定界符 | Custom delimiters** — 默认 `[[ ]]`，可改成 `<% %>` 等
 - 🚫 **条件性排除 | Conditional exclusion** — `ignore` 模式本身会被渲染，可按变量决定某个文件或目录是否生成
 - 📂 **文件重命名 | Renaming** — 基于模板变量重写文件与目录名
@@ -155,12 +156,17 @@ choices errors too.
 
 ## 📦 依赖 | Dependencies
 
-| 依赖 \| Dependency | 说明 \| Description |
+kopy 只使用 Go 标准库，`go.mod` 没有任何 `require`，也没有 `go.sum`。
+
+[EN] kopy depends only on the Go standard library: `go.mod` has no `require` entries and there is no `go.sum`.
+
+| 能力 \| Capability | 实现 \| Implementation |
 | --- | --- |
-| [go-toolbox](https://github.com/kamalyes/go-toolbox) | 命名转换（stringx）、数学工具（mathx） |
-| [go-logger](https://github.com/kamalyes/go-logger) | 日志输出 |
-| [cobra](https://github.com/spf13/cobra) | CLI 框架 |
-| [yaml.v3](https://gopkg.in/yaml.v3) | YAML 解析 |
+| CLI 与子命令 \| CLI | `bootstrap/cli.go`（标准库 `flag`） |
+| YAML 解析 \| YAML | `config/yaml.go`（内置 YAML 子集解析器） |
+| 日志 \| Logging | `log/log.go`（标准库 `log`） |
+| 类型化错误 \| Typed errors | `errors/base.go`（标准库 `fmt` / `errors`） |
+| 命名转换 \| Naming | `engine/naming.go`（标准库 `strings` / `unicode`） |
 
 ## License
 

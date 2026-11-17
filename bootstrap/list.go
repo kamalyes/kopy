@@ -15,13 +15,12 @@ import (
 	"github.com/kamalyes/kopy/config"
 	kopylog "github.com/kamalyes/kopy/log"
 	"github.com/kamalyes/kopy/source"
-	"github.com/spf13/cobra"
 )
 
-var listCmd = &cobra.Command{
+var listCmd = &Command{
 	Use:   "list <template-source>",
 	Short: "列出模板信息 | List template info and questions",
-	Args:  cobra.ExactArgs(1),
+	Args:  ExactArgs(1),
 	Run:   runList,
 }
 
@@ -29,7 +28,7 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 }
 
-func runList(cmd *cobra.Command, args []string) {
+func runList(cmd *Command, args []string) {
 	templateSource := args[0]
 
 	src := source.New(templateSource)
